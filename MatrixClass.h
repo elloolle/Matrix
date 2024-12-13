@@ -2,15 +2,8 @@
 #include <cassert>
 #include <array>
 #include <chrono>
-
 #include "Rational.h"
 #include "Residue.h"
-
-template<size_t N>
-bool operator!=(const Residue<N>& a, const Residue<N>& b) {
-  return !(a == b);
-}
-
 template<size_t M, size_t N, typename Field = Rational>
 struct Matrix {
   using Row = std::array<Field, N>;
@@ -18,6 +11,13 @@ struct Matrix {
   std::array<Row, M> table;
   Matrix() {
     SetOperation([](Field& x) { x = 0; });
+  }
+  Matrix(const std::initializer_list<std::array<Field,N>>& list) {
+    auto it = list.begin();
+    for (int i = 0; i < M; ++i) {
+      table[i] = *it;
+      ++it;
+    }
   }
   template<typename Func, typename... Args>
   void SetOperationWithIndex(Func function, Args... args) {
@@ -102,15 +102,42 @@ struct Matrix {
     SetOperation([a](Field& x) { x *= a; });
     return *this;
   }
+  Matrix& operator*=(const Matrix& a) {
+    static_assert(M==N);
+    for (size_t i = 0; i < M; ++i) {
+      for (size_t j = 0; j < M; ++j) {
+        for (size_t k = 0; k < M; ++k) {
+          (*this)[i, j] += (*this)[i, k] * a[k, j];
+        }
+      }
+    }
+    return *this;
+  }
   void Print() const {
     for (size_t i = 0; i < M; ++i) {
       for (size_t j = 0; j < N; ++j) {
-        cout << table[i][j] << " ";
+        std::cout << table[i][j] << " ";
       }
-      cout << '\n';
+      std::cout << '\n';
     }
   }
 };
+template<size_t M, size_t N, typename T, typename Field = Rational>
+bool operator==(const Matrix<M,N,Field>& a, const Matrix<M, N, Field>& b) {
+  for (int i = 0; i < M; ++i) {
+    for (int j = 0; j < N; ++j) {
+      if(a[i,j] != b[i,j]) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+template<size_t M, size_t N, typename T, typename Field = Rational>
+bool operator!=(const Matrix<M,N,Field>& a, const Matrix<M, N, Field>& b) {
+  return !(a==b);
+}
+
 template<size_t M, typename Field = Rational>
 using SquareMatrix = Matrix<M, M, Field>;
 template<size_t M, size_t N, typename T, typename Field = Rational>
@@ -139,7 +166,6 @@ Matrix<M, N, Field> operator-(const Matrix<M, N, Field> a,
   copy -= b;
   return copy;
 }
-// в случае если нет неявной конверсии из Field1 в Field2, то будет CE
 template<size_t M, size_t N, size_t K, typename Field = Rational>
 Matrix<M, K, Field> operator*(const Matrix<M, N, Field> a,
                               const Matrix<N, K, Field> b) {

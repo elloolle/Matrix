@@ -828,3 +828,8 @@ std::ostream& operator<<(std::ostream& stream, const Rational& n) {
   stream << s;
   return stream;
 }
+std::istream& operator>>(std::istream& stream, Rational& n) {
+  BigInteger a;
+  stream>>a;
+  n = BigInteger(a);
+}

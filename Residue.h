@@ -1,25 +1,3 @@
-#include <type_traits>
-#include <cmath>
-template<size_t N, size_t D>
-struct IsPrime_Helper {
-  static constexpr bool value = N % D != 0 && std::conditional_t<
-    (D * D > N), IsPrime_Helper<0, 0>, IsPrime_Helper<N, D + 1> >::value;
-};
-template<>
-struct IsPrime_Helper<0, 0> {
-  static constexpr bool value = true;
-};
-template<size_t N>
-struct IsPrime {
-  static constexpr bool value = IsPrime_Helper<N, 2>::value;
-};
-template<>
-struct IsPrime<1> {
-  static constexpr bool value = false;
-};
-template<size_t N>
-constexpr bool IsPrime_v = IsPrime<N>::value;
-
 template<size_t N>
 struct Residue {
   int number;

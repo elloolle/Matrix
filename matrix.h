@@ -1,4 +1,5 @@
 #pragma once
+#define CPP23
 #include <cassert>
 #include <array>
 #include <chrono>
@@ -25,7 +26,6 @@ BigInteger operator+(const BigInteger& a, const BigInteger& b);
 BigInteger operator-(const BigInteger& a, const BigInteger& b);
 
 std::ostream& operator<<(std::ostream& stream, const BigInteger& n);
-
 class BigInteger {
   std::vector<int> digits_;
   int sign_ = 0;
@@ -834,7 +834,12 @@ std::ostream& operator<<(std::ostream& stream, const Rational& n) {
   stream << s;
   return stream;
 }
-
+std::istream& operator>>(std::istream& stream, Rational& n) {
+  BigInteger a;
+  stream>>a;
+  n = BigInteger(a);
+  return stream;
+}
 template<size_t N, size_t D>
 struct IsPrime_Helper {
   static constexpr bool value = N % D != 0 && std::conditional_t<
@@ -873,21 +878,24 @@ struct Residue {
     return number;
   }
   static Residue pow(Residue a, size_t n) {
-    if(n == 0) {
-      return 1;
+    Residue result = 1;
+    while (n > 0) {
+      if (n & 1) {
+        result *= a;
+      }
+      a *= a;
+      n >>= 1;
     }
-    if(n%2 == 0) {
-      return pow(a,n/2)*pow(a,n/2);
-    }
-    return a*pow(a,n-1);
+    return result;
   }
   Residue& operator+=(Residue a) {
     number = (number + a) % N;
     return *this;
   }
-  Residue& operator-() {
-    if (number > 0) {
-      number = -number + N;
+  Residue operator-() {
+    Residue ans = *this;
+    if (ans.number != 0) {
+      ans.number = -ans.number + N;
     }
     return *this;
   }
@@ -895,13 +903,14 @@ struct Residue {
     return operator+=(-a);
   }
   Residue& operator*=(Residue a) {
-    number = static_cast<long long>(number * a) % N;
+    number = (static_cast<long long>(number) * a) % N;
     return *this;
   }
   Residue& operator/=(Residue a) {
     static_assert(IsPrime_v<N>);
     //a^(p-1) = 1, a^(p-2) = 1/a => a^(p-2) * b
-    return pow(*this,N-2)*a;
+    *this *= pow(a,N-2);
+    return *this;
   }
 };
 template<size_t N>
@@ -940,10 +949,10 @@ struct Matrix {
   }
   Matrix(const std::initializer_list<std::array<Field,N>>& list) {
     auto it = list.begin();
-    for (int i = 0; i < M; ++i) {
+    for (size_t i = 0; i < M; ++i) {
       table[i] = *it;
       ++it;
-    } 
+    }
   }
   template<typename Func, typename... Args>
   void SetOperationWithIndex(Func function, Args... args) {
@@ -970,7 +979,7 @@ struct Matrix {
     }
     return m;
   }
-  Matrix<N, M> transposed() const {
+  Matrix<N, M,Field> transposed() const {
     Matrix<N, M, Field> m;
     m.SetOperationWithIndex([*this](Field& x, size_t i, size_t j) {
       x = (*this)[j, i];
@@ -991,7 +1000,7 @@ struct Matrix {
     static_assert(M == N);
     Field sum = 0;
     for (size_t i = 0; i < M; ++i) {
-      sum += table[i, i];
+      sum += (*this)[i, i];
     }
     return sum;
   }
@@ -1028,6 +1037,11 @@ struct Matrix {
     SetOperation([a](Field& x) { x *= a; });
     return *this;
   }
+  Matrix& operator*=(const Matrix& a) {
+    static_assert(M==N);
+    *this = *this*a;
+    return *this;
+  }
   void Print() const {
     for (size_t i = 0; i < M; ++i) {
       for (size_t j = 0; j < N; ++j) {
@@ -1037,6 +1051,22 @@ struct Matrix {
     }
   }
 };
+template<size_t M, size_t N, typename Field = Rational>
+bool operator==(const Matrix<M,N,Field>& a, const Matrix<M, N, Field>& b) {
+  for (size_t i = 0; i < M; ++i) {
+    for (size_t j = 0; j < N; ++j) {
+      if(a[i,j] != b[i,j]) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+template<size_t M, size_t N, typename Field = Rational>
+bool operator!=(const Matrix<M,N,Field>& a, const Matrix<M, N, Field>& b) {
+  return !(a==b);
+}
+
 template<size_t M, typename Field = Rational>
 using SquareMatrix = Matrix<M, M, Field>;
 template<size_t M, size_t N, typename T, typename Field = Rational>
