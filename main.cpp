@@ -24,7 +24,10 @@ int main(){
   // auto m1 = SquareMatrix<5>::unityMatrix();
   // m==m1;
   // m.Print();
-  const Matrix<3, 2> b = {{2, 0},{1, 3},{0, 4}};
+  Matrix<2, 3> b = {{0, 1,3},{0, 3,2}};
+  b.GaussMethod();
+  b.Print();
   // b.inverted().Print();
   // tester();
+
 }
