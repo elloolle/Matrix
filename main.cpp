@@ -14,22 +14,9 @@ void test_impl() {
   }
 }
 int main(){
-  // array<array<int,2>,3> a = {{3,1}};
-  // cout<<a[0][0];
-// test_impl<>();
-
-  // Residue<99527> a = 17095;
-  // std::cout << Residue<prime>::pow(a, prime-1) << ' ';
-  // auto m = SquareMatrix<5>::unityMatrix();
-  // auto m1 = SquareMatrix<5>::unityMatrix();
-  // m==m1;
-  // m.Print();
-  Matrix<2, 3> b = {{0, 1,3},{0, 3,2}};
-  // Matrix<3, 3> b = {{328, 1,3},{1, 3234,2},{34839,4,0}};
+  // Matrix<2, 3> b = {{0, 1,3},{0, 3,2}};
+  Matrix<3, 3> b = {{3, 1,3},{1, 3,2},{3,4,0}};
   // Matrix<3, 4> b = {{0, 1,3,3284029},{1, 3,2,103},{3,4,0,193}};
-  b.GaussMethod();
-  b.Print();
-  // b.inverted().Print();
-  // tester();
-
+  // TestRank();
+  cout<<b.det();
 }
