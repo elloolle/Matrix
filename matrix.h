@@ -960,6 +960,7 @@ struct Matrix {
     SetOperation([](Field& x) { x = 0; });
   }
   Matrix(const Matrix&) = default;
+  Matrix& operator=(const Matrix&) = default;
   Matrix(const std::initializer_list<std::array<Field, N> >& list) {
     auto it = list.begin();
     for (size_t i = 0; i < M; ++i) {
@@ -1026,38 +1027,38 @@ struct Matrix {
   }
 
   void swapColumns(size_t first, size_t second) {
-    for (int i = 0; i < M; ++i) {
+    for (size_t i = 0; i < M; ++i) {
       std::swap(table[i][first], table[i][second]);
     }
   }
 
   void multiplyRowByScalar(size_t pos, Field scalar) {
-    std::ranges::for_each(table[pos], [scalar](Field& x) { x *= scalar; });
+    std::for_each(table[pos].begin(),table[pos].end, [scalar](Field& x) { x *= scalar; });
   }
 
   void multiplyColumnByScalar(size_t pos, Field scalar) {
-    for (int i = 0; i < M; ++i) {
+    for (size_t i = 0; i < M; ++i) {
       table[i][pos] *= scalar;
     }
   }
 
   // Вычитаем из строки first строку second * scalar
   void subtractRows(size_t first, size_t second, Field scalar = 1) {
-    for (int i = 0; i < N; ++i) {
+    for (size_t i = 0; i < N; ++i) {
       table[first][i] -= table[second][i] * scalar;
     }
   }
 
   // Вычитаем из столбца first столбец second * scalar
   void subtractColumns(size_t first, size_t second, Field scalar) {
-    for (int i = 0; i < M; ++i) {
+    for (size_t i = 0; i < M; ++i) {
       table[i][first] -= table[i][second] * scalar;
     }
   }
 
   // равна ли нулю колонна pos от start до end(не вкл)
   bool isColumnNull(size_t pos,size_t start = 0, size_t end = M) const {
-    for (int i = start; i < end; ++i) {
+    for (size_t i = start; i < end; ++i) {
       if (table[i][pos] != 0) {
         return false;
       }
@@ -1069,16 +1070,15 @@ struct Matrix {
   // причем в случае N == 1, он не делает ничего доп
   // если N == 2, то он запоминает число, на которое должен был умножится детерминант
   // если N == 3, то он все элементарные преобразования выполняет и с единичной матрицей
-  template<int F>
-  auto GaussMethod() {
-    static_assert(F == 3 && (M!=F));
+  template<int F, typename T>
+  void GaussMethod(T& value) {
     Matrix E;
     Field det = 1;
     if constexpr(F == 3) {
       E = unityMatrix();
     }
     size_t k = 0;
-    for (size_t i = 0; i < F && k<M; ++i) {
+    for (size_t i = 0; i < N && k<M; ++i) {
       if(isColumnNull(i,k,M)) {
         continue;
       }
@@ -1113,26 +1113,30 @@ struct Matrix {
       ++k;
     }
     if constexpr(F == 2) {
-      return det;
+      value = det;
     }
     if constexpr(F == 3) {
-      return E;
+      value = E;
     }
   }
 
-  Field det() const {
+   Field det() const {
     static_assert(M == N);
     Matrix copy = *this;
-    Field matrixDet = copy.GaussMethod<2>();
-    if(copy != unityMatrix()) {
-      return 0;
+    Field matrixDet;
+    copy.template GaussMethod<2>(matrixDet);
+    for (size_t i = 0; i < M; ++i) {
+      if(copy[i,i]!=1) {
+        return 0;
+      }
     }
-    return det;
+    return 1/matrixDet;
   }
 
   Field rank() const {
     Matrix copy = *this;
-    copy.GaussMethod();
+    bool a;
+    copy.template GaussMethod<1>(a);
     size_t matrixRank = 0;
     size_t j = 0;
     for (size_t i = 0; i < M; ++i) {
@@ -1148,12 +1152,13 @@ struct Matrix {
     return matrixRank;
   }
 
-  Matrix<N, M> inverted() const {
-    return {};
+  Matrix<N, M,Field> inverted() const {
+    Matrix copy = *this;
+    return {copy.transposed()};
   }
 
   void invert() {
-    static_assert(M != N);
+    static_assert(M == N);
     Matrix copy = *this;
     *this = copy.inverted();
   }

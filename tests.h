@@ -124,9 +124,75 @@ void TestRank() {
         {0, 0, 0}
     }};
     assert(mixed.rank() == 2);
+        // Тест 13: Матрица с одной ненулевой строкой
+        Matrix<3, 4, double> oneRow = {{
+            {1, 2, 3, 4},
+            {0, 0, 0, 0},
+            {0, 0, 0, 0}
+        }};
+        assert(oneRow.rank() == 1);
 
-    std::cout << "Rank tests passed!\n";
-}
+        // Тест 14: Матрица с одним ненулевым столбцом
+        Matrix<4, 3, double> oneColumn = {{
+            {1, 0, 0},
+            {2, 0, 0},
+            {3, 0, 0},
+            {4, 0, 0}
+        }};
+        assert(oneColumn.rank() == 1);
+
+        // Тест 15: Матрица с диагональным доминированием
+        Matrix<3, 3, double> diagonal = {{
+            {10, 1, 1},
+            {1, 10, 1},
+            {1, 1, 10}
+        }};
+        assert(diagonal.rank() == 3);
+
+        // Тест 16: Матрица с повторяющимися строками
+        Matrix<4, 3, double> repeatedRows = {{
+            {1, 2, 3},
+            {1, 2, 3},
+            {4, 5, 6},
+            {4, 5, 6}
+        }};
+        assert(repeatedRows.rank() == 2);
+
+        // Тест 17: Треугольная матрица
+        Matrix<3, 3, double> triangular = {{
+            {1, 2, 3},
+            {0, 4, 5},
+            {0, 0, 6}
+        }};
+        assert(triangular.rank() == 3);
+
+        // Тест 18: Матрица с чередующимися знаками
+        Matrix<3, 3, double> alternating = {{
+            {1, -1, 1},
+            {-1, 1, -1},
+            {1, -1, 1}
+        }};
+        assert(alternating.rank() == 1);
+
+        // Тест 19: Блочная матрица
+        Matrix<4, 4, double> block = {{
+            {1, 0, 0, 0},
+            {0, 1, 0, 0},
+            {0, 0, 2, 2},
+            {0, 0, 2, 2}
+        }};
+        assert(block.rank() == 3);
+
+        // Тест 20: Матрица с периодическим паттерном
+        Matrix<3, 4, double> periodic = {{
+            {1, 2, 1, 2},
+            {3, 4, 3, 4},
+            {5, 6, 5, 6}
+        }};
+        assert(periodic.rank() == 2);
+
+        std::cout << "Additional rank tests passed!\n";
+    }
 
 void TestInversion() {
     std::cout << "Testing matrix inversion...\n";
