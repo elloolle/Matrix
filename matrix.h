@@ -1063,42 +1063,31 @@ struct Matrix {
   }
   // этот метод преобразует матрицу в ступенчатую
   void GaussMethod() {
-    size_t i = 0;
-    while (i < N) {
-      if (!isColumnNull(i)) {
-        break;
+    size_t k = 0;
+    for (size_t i = 0; i < N && k<M; ++i) {
+      if(isColumnNull(i)) {
+        continue;
       }
-      ++i;
-    }
-    // size_t j = 0;
-    // for (size_t i = 0; i < N; ++i) {
-    //   if(isColumnNull(i)) {
-    //     continue;
-    //   }
-    //
-    // }
-    if (i == N) {
-      // в этом случае матрица будет нулевой
-      return;
-    }
-    Print();
-
-    // i - первый ненулевой столбец
-    if (table[0][i] == 0) {
-      int j = 1;
-      while (table[j][i] == 0) {
-        ++j;
+      // i - (k)-ый ненулевой столбец
+      if (table[k][i] == 0) {
+        size_t j = k+1;
+        while (table[j][i] == 0) {
+          ++j;
+        }
+        swapRows(k, j);
       }
-      swapRows(0, j);
-    }
-    Print();
 
-    // нормализация столбца i
-    multiplyColumnByScalar(i,1/(table[0][i]));
+      // нормализация столбца i
+      multiplyColumnByScalar(i,1/(table[k][i]));
 
-    // делаем весь i-ый столбец нулевым кроме его первого элемента
-    for (size_t k = 1; k < M; ++k) {
-      subtractRows(k,0,table[k][i]);
+      // делаем весь i-ый столбец нулевым кроме его k-го элемента
+      for (size_t t = 0; t < M; ++t) {
+        if(t == k) {
+          continue;
+        }
+        subtractRows(t,k,table[t][i]);
+      }
+      ++k;
     }
   }
   Field det() const {
