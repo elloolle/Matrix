@@ -1,1 +1,1 @@
-/usr/bin/c++ -g -fno-omit-frame-pointer -fsanitize=undefined CMakeFiles/Matrix.dir/main.cpp.o -o Matrix 
+/usr/bin/c++ -g -fno-omit-frame-pointer -fsanitize=leak CMakeFiles/Matrix.dir/main.cpp.o -o Matrix 

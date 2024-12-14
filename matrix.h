@@ -1104,40 +1104,42 @@ struct Matrix {
       }
       // i - (k)-ая ненулевая строка
       if (table[i][k] == 0) {
-        size_t j = k+1;
-        while (table[i][j] == 0) {
+        size_t j = i+1;
+        while (table[j][k] == 0 && j<M) {
           ++j;
+        }
+        if(j == M) {
+          ++k;
+          continue;
         }
         det*=Field(-1);
         if constexpr(F == 3) {
-          E.swapColumns(k,j);
+          E.swapRows(i,j);
         }
-
-        swapColumns(k, j);
-        cout<<"swapColumns"<<'\n';
-        Print();
+        swapRows(i,j);
+        // cout<<"swapRows"<<'\n';
+        // Print();
       }
-      // нормализация столбца i
-      det*=(Field(1)/(table[k][i]));
+      // нормализация строки i
+      det*=(Field(1)/(table[i][k]));
       if constexpr(F == 3) {
         E.multiplyRowByScalar(i,Field(1)/(table[i][k]));
       }
       multiplyRowByScalar(i,Field(1)/(table[i][k]));
-      cout<<"multiplyRowByScalar"<<'\n';
-      Print();
+      // cout<<"multiplyRowByScalar"<<'\n';
+      // Print();
 
-      // делаем всю i-ую строку нулевой кроме её k-го элемента
-      for (size_t t = 0; t < N; ++t) {
-        if(t == k) {
+      // делаем весь k-ый столбец нулевым кроме её i-го элемента
+      for (size_t t = 0; t < M; ++t) {
+        if(t == i) {
           continue;
         }
         if constexpr(F == 3) {
-          E.subtractColumns(t,k,table[i][t]);
+          E.subtractRows(t,i,table[t][k]);
         }
-        subtractColumns(t,k,table[i][t]);
-        cout<<"subtractColumns"<<'\n';
-        Print();
-
+        subtractRows(t,i,table[t][k]);
+        // cout<<"subtractRows"<<'\n';
+        // Print();
       }
       ++k;
     }
@@ -1162,7 +1164,7 @@ struct Matrix {
     return Field(1)/matrixDet;
   }
 
-  Field rank() const {
+  size_t rank() const {
     // std::cerr<<typeid(Field).name()<<"\n";
     // Print_cerr();
     Matrix copy = *this;
@@ -1170,22 +1172,19 @@ struct Matrix {
     copy.template GaussMethod<1>(a);
     // copy.Print();
     size_t matrixRank = 0;
-    size_t j = 0;
     for (size_t i = 0; i < M; ++i) {
-      while(copy.table[i][j] == 0 && j<N) {
-        ++j;
+      for (size_t j = 0; j < N; ++j) {
+        if(copy.table[i][j] != 0) {
+          ++matrixRank;
+          break;
+        }
       }
-      if(j == N) {
-        continue;
-      }
-      ++matrixRank;
-      ++j;
     }
-    std::cerr<<matrixRank;
     return matrixRank;
   }
 
-  Matrix<N, M,Field> inverted() const {
+  Matrix<M, M,Field> inverted() const {
+    static_assert(M==N);
     Matrix copy = *this;
     Matrix ans;
     copy.template GaussMethod<3>(ans);
@@ -1233,7 +1232,7 @@ struct Matrix {
       }
       std::cout << '\n';
     }
-    cout<<'\n';
+    std::cout<<'\n';
   }
   void Print_cerr() const {
     for (size_t i = 0; i < M; ++i) {

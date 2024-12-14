@@ -6,5 +6,5 @@ CXX_DEFINES =
 
 CXX_INCLUDES = 
 
-CXX_FLAGS = -g -fno-omit-frame-pointer -fsanitize=undefined -std=gnu++23 -fdiagnostics-color=always
+CXX_FLAGS = -g -fno-omit-frame-pointer -fsanitize=leak -std=gnu++23 -fdiagnostics-color=always
 
