@@ -938,7 +938,9 @@ bool operator==(Residue<N> a, Residue<N> b) {
   return a.number == b.number;
 }
 
-
+Rational abs(const Rational& r) {
+  return r>0?r:(-1*r);
+}
 template<size_t M, size_t N, typename Field = Rational>
 struct Matrix {
   using Row = std::array<Field, N>;
@@ -947,6 +949,7 @@ struct Matrix {
   Matrix() {
     SetOperation([](Field& x) { x = 0; });
   }
+  Matrix(const Matrix&) = default;
   Matrix(const std::initializer_list<std::array<Field,N>>& list) {
     auto it = list.begin();
     for (size_t i = 0; i < M; ++i) {
@@ -1010,10 +1013,13 @@ struct Matrix {
   Field rank() const {
     return 0;
   }
-  Field inverted() const {
+  Matrix<N,M> inverted() const {
     return 0;
   }
-  void invert() const {
+  void invert() {
+    static_assert(M!=N);
+    Matrix copy = *this;
+    *this = copy.inverted();
   }
   Field& operator[](size_t i, size_t j) {
     return table[i][j];

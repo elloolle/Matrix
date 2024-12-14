@@ -155,8 +155,9 @@ CMakeFiles/Matrix.dir/main.cpp.o: \
  /usr/include/c++/13/bits/basic_ios.tcc \
  /usr/include/c++/13/bits/ostream.tcc /usr/include/c++/13/istream \
  /usr/include/c++/13/bits/istream.tcc \
- /mnt/c/Users/Hello/CLionProjects/Matrix/matrix.h \
+ /mnt/c/Users/Hello/CLionProjects/Matrix/tests.h \
  /usr/include/c++/13/cassert /usr/include/assert.h \
+ /mnt/c/Users/Hello/CLionProjects/Matrix/matrix.h \
  /usr/include/c++/13/array /usr/include/c++/13/chrono \
  /usr/include/c++/13/bits/chrono.h /usr/include/c++/13/ratio \
  /usr/include/c++/13/cstdint \

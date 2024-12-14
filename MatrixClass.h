@@ -12,6 +12,7 @@ struct Matrix {
   Matrix() {
     SetOperation([](Field& x) { x = 0; });
   }
+  Matrix(const Matrix&) = default;
   Matrix(const std::initializer_list<std::array<Field,N>>& list) {
     auto it = list.begin();
     for (int i = 0; i < M; ++i) {
@@ -69,16 +70,120 @@ struct Matrix {
     }
     return sum;
   }
+
   Field det() const {
-    return 0;
-  }
-  Field rank() const {
-    return 0;
-  }
-  Field inverted() const {
-    return 0;
-  }
-  void invert() const {
+        Matrix<M, N, Field> temp = *this;
+        Field det_scale = 1;
+        for (size_t i = 0; i < M; ++i) {
+            // Поиск максимального элемента в столбце
+            size_t pivot = i;
+            for (size_t j = i + 1; j < M; ++j) {
+                if (abs(temp[j, i]) > abs(temp[pivot, i])) {
+                    pivot = j;
+                }
+            }
+            if (temp[pivot, i] == 0) {
+                return 0;
+            }
+            if (pivot != i) {
+                // Меняем строки местами
+                for (size_t j = 0; j < N; ++j) {
+                    std::swap(temp[i, j], temp[pivot, j]);
+                }
+                det_scale = -det_scale;
+            }
+            det_scale *= temp[i, i];
+            // Приведение элементов ниже диагонали к нулю
+            for (size_t j = i + 1; j < M; ++j) {
+                Field factor = temp[j, i] / temp[i, i];
+                for (size_t k = i; k < N; ++k) {
+                    temp[j, k] -= factor * temp[i, k];
+                }
+            }
+        }
+        return det_scale;
+    }
+
+  size_t rank() const {
+        Matrix<M, N, Field> temp = *this;
+        size_t rank = 0;
+        for (size_t i = 0; i < M; ++i) {
+            // Поиск ненулевого элемента
+            size_t pivot = i;
+            while (pivot < M && temp[pivot, i] == 0) {
+                ++pivot;
+            }
+            if (pivot == M) {
+                continue;
+            }
+            if (pivot != i) {
+                // Меняем строки местами
+                for (size_t j = 0; j < N; ++j) {
+                    std::swap(temp[i, j], temp[pivot, j]);
+                }
+            }
+            // Нормализация строки
+            Field factor = temp[i, i];
+            for (size_t j = 0; j < N; ++j) {
+                temp[i, j] /= factor;
+            }
+            // Обнуление элементов в столбце
+            for (size_t j = 0; j < M; ++j) {
+                if (j != i && temp[j, i] != 0) {
+                    Field multiple = temp[j, i];
+                    for (size_t k = 0; k < N; ++k) {
+                        temp[j, k] -= multiple * temp[i, k];
+                    }
+                }
+            }
+            ++rank;
+        }
+        return rank;
+    }
+
+  Matrix inverted() const {
+        Matrix temp = *this;
+        Matrix inverse;
+        // Приведение матрицы к ступенчатому виду
+        for (size_t i = 0; i < M; ++i) {
+            // Поиск ненулевого элемента
+            size_t pivot = i;
+            while (pivot < M && temp[pivot, i] == 0) {
+                ++pivot;
+            }
+            if (pivot == M) {
+                throw std::runtime_error("Матрица вырожденная и не имеет обратной.");
+            }
+            if (pivot != i) {
+                // Меняем строки местами в обеих матрицах
+                for (size_t j = 0; j < N; ++j) {
+                    std::swap(temp[i, j], temp[pivot, j]);
+                    std::swap(inverse[i, j], inverse[pivot, j]);
+                }
+            }
+            // Нормализация строки
+            Field factor = temp[i, i];
+            for (size_t j = 0; j < N; ++j) {
+                temp[i, j] /= factor;
+                inverse[i, j] /= factor;
+            }
+            // Обнуление остальных элементов в столбце
+            for (size_t j = 0; j < M; ++j) {
+                if (j != i && temp[j, i] != 0) {
+                    Field multiple = temp[j, i];
+                    for (size_t k = 0; k < N; ++k) {
+                        temp[j, k] -= multiple * temp[i, k];
+                        inverse[j, k] -= multiple * inverse[i, k];
+                    }
+                }
+            }
+        }
+        return inverse;
+    }
+  void invert() {
+    static_assert(M!=N);
+    Matrix copy = *this;
+    *this = copy.inverted();
   }
   Field& operator[](size_t i, size_t j) {
     return table[i][j];
