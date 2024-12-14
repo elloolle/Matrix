@@ -35,7 +35,7 @@
 			"compileCommandFragments" : 
 			[
 				{
-					"fragment" : "-g -fno-omit-frame-pointer -fsanitize=leak -std=gnu++23 -fdiagnostics-color=always"
+					"fragment" : "-g -fno-omit-frame-pointer -fsanitize=undefined -std=gnu++23 -fdiagnostics-color=always"
 				}
 			],
 			"language" : "CXX",
@@ -59,7 +59,7 @@
 		"commandFragments" : 
 		[
 			{
-				"fragment" : "-g -fno-omit-frame-pointer -fsanitize=leak",
+				"fragment" : "-g -fno-omit-frame-pointer -fsanitize=undefined",
 				"role" : "flags"
 			},
 			{

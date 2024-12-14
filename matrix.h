@@ -902,12 +902,12 @@ struct Residue {
     number = (number + a) % N;
     return *this;
   }
-  Residue operator-() {
+  Residue operator-()const {
     Residue ans = *this;
     if (ans.number != 0) {
       ans.number = -ans.number + N;
     }
-    return *this;
+    return ans;
   }
   Residue& operator-=(Residue a) {
     return operator+=(-a);
@@ -1033,10 +1033,16 @@ struct Matrix {
   }
 
   void multiplyRowByScalar(size_t pos, Field scalar) {
-    std::for_each(table[pos].begin(),table[pos].end, [scalar](Field& x) { x *= scalar; });
+    if(scalar == 1) {
+      return;
+    }
+    std::for_each(table[pos].begin(),table[pos].end(), [scalar](Field& x) { x *= scalar; });
   }
 
   void multiplyColumnByScalar(size_t pos, Field scalar) {
+    if(scalar == 1) {
+      return;
+    }
     for (size_t i = 0; i < M; ++i) {
       table[i][pos] *= scalar;
     }
@@ -1044,6 +1050,9 @@ struct Matrix {
 
   // Вычитаем из строки first строку second * scalar
   void subtractRows(size_t first, size_t second, Field scalar = 1) {
+    if(scalar == 0) {
+      return;
+    }
     for (size_t i = 0; i < N; ++i) {
       table[first][i] -= table[second][i] * scalar;
     }
@@ -1051,6 +1060,9 @@ struct Matrix {
 
   // Вычитаем из столбца first столбец second * scalar
   void subtractColumns(size_t first, size_t second, Field scalar) {
+    if(scalar == 0) {
+      return;
+    }
     for (size_t i = 0; i < M; ++i) {
       table[i][first] -= table[i][second] * scalar;
     }
@@ -1060,6 +1072,14 @@ struct Matrix {
   bool isColumnNull(size_t pos,size_t start = 0, size_t end = M) const {
     for (size_t i = start; i < end; ++i) {
       if (table[i][pos] != 0) {
+        return false;
+      }
+    }
+    return true;
+  }
+  bool isRowNull(size_t pos,size_t start = 0, size_t end = N) const {
+    for (size_t i = start; i < end; ++i) {
+      if (table[pos][i] != 0) {
         return false;
       }
     }
@@ -1078,37 +1098,46 @@ struct Matrix {
       E = unityMatrix();
     }
     size_t k = 0;
-    for (size_t i = 0; i < N && k<M; ++i) {
-      if(isColumnNull(i,k,M)) {
+    for (size_t i = 0; i < M && k<N; ++i) {
+      if(isRowNull(i,k,N)) {
         continue;
       }
-      // i - (k)-ый ненулевой столбец
-      if (table[k][i] == 0) {
+      // i - (k)-ая ненулевая строка
+      if (table[i][k] == 0) {
         size_t j = k+1;
-        while (table[j][i] == 0) {
+        while (table[i][j] == 0) {
           ++j;
         }
-        det*=-1;
+        det*=Field(-1);
         if constexpr(F == 3) {
-          E.swapRows(k,j);
+          E.swapColumns(k,j);
         }
-        swapRows(k, j);
+
+        swapColumns(k, j);
+        cout<<"swapColumns"<<'\n';
+        Print();
       }
       // нормализация столбца i
-      det*=(1/(table[k][i]));
+      det*=(Field(1)/(table[k][i]));
       if constexpr(F == 3) {
-        E.multiplyColumnByScalar(i,1/(table[k][i]));
+        E.multiplyRowByScalar(i,Field(1)/(table[i][k]));
       }
-      multiplyColumnByScalar(i,1/(table[k][i]));
-      // делаем весь i-ый столбец нулевым кроме его k-го элемента
-      for (size_t t = 0; t < M; ++t) {
+      multiplyRowByScalar(i,Field(1)/(table[i][k]));
+      cout<<"multiplyRowByScalar"<<'\n';
+      Print();
+
+      // делаем всю i-ую строку нулевой кроме её k-го элемента
+      for (size_t t = 0; t < N; ++t) {
         if(t == k) {
           continue;
         }
         if constexpr(F == 3) {
-          E.subtractRows(t,k,table[t][i]);
+          E.subtractColumns(t,k,table[i][t]);
         }
-        subtractRows(t,k,table[t][i]);
+        subtractColumns(t,k,table[i][t]);
+        cout<<"subtractColumns"<<'\n';
+        Print();
+
       }
       ++k;
     }
@@ -1130,13 +1159,16 @@ struct Matrix {
         return 0;
       }
     }
-    return 1/matrixDet;
+    return Field(1)/matrixDet;
   }
 
   Field rank() const {
+    // std::cerr<<typeid(Field).name()<<"\n";
+    // Print_cerr();
     Matrix copy = *this;
     bool a;
     copy.template GaussMethod<1>(a);
+    // copy.Print();
     size_t matrixRank = 0;
     size_t j = 0;
     for (size_t i = 0; i < M; ++i) {
@@ -1149,12 +1181,16 @@ struct Matrix {
       ++matrixRank;
       ++j;
     }
+    std::cerr<<matrixRank;
     return matrixRank;
   }
 
   Matrix<N, M,Field> inverted() const {
     Matrix copy = *this;
-    return {copy.transposed()};
+    Matrix ans;
+    copy.template GaussMethod<3>(ans);
+    // copy.Print();
+    return std::move(ans);
   }
 
   void invert() {
@@ -1196,6 +1232,15 @@ struct Matrix {
         std::cout << table[i][j] << " ";
       }
       std::cout << '\n';
+    }
+    cout<<'\n';
+  }
+  void Print_cerr() const {
+    for (size_t i = 0; i < M; ++i) {
+      for (size_t j = 0; j < N; ++j) {
+        std::cerr << table[i][j] << " ";
+      }
+      std::cerr << '\n';
     }
   }
 };
