@@ -39,6 +39,6 @@ int main(){
     {0, 0, 2},
     {0, 0, 0}
   }};
-  cout<<mixed.rank();
-  cout<<Matrix<300,300>::unityMatrix().det();
+  cout<<mixed.transposed();
+  cout<<Matrix<10,10>::unityMatrix();
 }

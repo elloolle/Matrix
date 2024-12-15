@@ -1,28 +1,29 @@
 #pragma once
 #define CPP23
-#include <cassert>
-#include <array>
-#include <chrono>
 #include <algorithm>
+#include <array>
+#include <cassert>
+#include <chrono>
 #include <cmath>
 #include <compare>
-#include <iostream>
-#include <string>
-#include <vector>
-#include <type_traits>
-#include <cmath>
 #include <set>
-
+#include <string>
+#include <type_traits>
+#include <vector>
+#include <iostream>
 class BigInteger;
-using std::string;
-using std::vector;
-using std::cerr;
+
 
 BigInteger operator*(const BigInteger& a, const BigInteger& b);
+
 std::strong_ordering operator<=>(const BigInteger& a, const BigInteger& b);
+
 bool operator==(const BigInteger& a, const BigInteger& b);
+
 BigInteger operator/(const BigInteger& a, const BigInteger& b);
+
 BigInteger operator+(const BigInteger& a, const BigInteger& b);
+
 BigInteger operator-(const BigInteger& a, const BigInteger& b);
 
 std::ostream& operator<<(std::ostream& stream, const BigInteger& n);
@@ -31,6 +32,7 @@ class BigInteger {
   int sign_ = 0;
   static constexpr int kBase = 1e9;
   static constexpr int kCountDigits = 9;
+
   friend class Rational;
   void delete_last_nulls() {
     for (int i = static_cast<int>(size()) - 1; i >= 1 && digits_[i] == 0; --i) {
@@ -43,572 +45,570 @@ class BigInteger {
     sign_ = 0;
   }
 
-  public:
-    BigInteger() = default;
-    BigInteger(const BigInteger&) = default;
-    explicit BigInteger(const vector<int>& n) : digits_(n), sign_(1) {
-    }
-    BigInteger& operator=(const BigInteger&) = default;
+ public:
+  BigInteger() = default;
 
-    BigInteger(long long n) {
-      if (n > 0) {
-        sign_ = 1;
-      } else if (n == 0) {
-        sign_ = 0;
-        digits_.push_back(0);
-        return;
-      } else {
-        sign_ = -1;
-        n = -n;
-      }
+  BigInteger(const BigInteger&) = default;
 
-      while (n > 0) {
-        digits_.push_back(n % kBase);
-        n /= kBase;
-      }
+  explicit BigInteger(const std::vector<int>& n) : digits_(n), sign_(1) {}
+
+  BigInteger& operator=(const BigInteger&) = default;
+
+  BigInteger(long long n) {
+    if (n > 0) {
+      sign_ = 1;
+    } else if (n == 0) {
+      sign_ = 0;
+      digits_.push_back(0);
+      return;
+    } else {
+      sign_ = -1;
+      n = -n;
     }
-    BigInteger(const BigInteger& n, size_t start, size_t end)
+
+    while (n > 0) {
+      digits_.push_back(n % kBase);
+      n /= kBase;
+    }
+  }
+
+  BigInteger(const BigInteger& n, size_t start, size_t end)
       : digits_(n.digits_.begin() + start, n.digits_.begin() + end), sign_(1) {
-      delete_last_nulls();
+    delete_last_nulls();
 
-      if (digits_.size() == 1 && digits_[0] == 0) {
-        change_to_zero();
+    if (digits_.size() == 1 && digits_[0] == 0) {
+      change_to_zero();
+    }
+  }
+
+  BigInteger(const std::vector<int>& n, int sign) : digits_(n), sign_(sign) {}
+
+  BigInteger(const std::string& s) : sign_(1) {
+    int k = 0;
+
+    if (s[0] == '-') {
+      sign_ = -1;
+      k = 1;
+    }
+    if (s == "-0") {
+      sign_ = 0;
+      return;
+    }
+    if (s[0] == '0') {
+      sign_ = 0;
+      return;
+    }
+    for (int i = static_cast<int>(s.size()) - 1; i >= k; i -= kCountDigits) {
+      int start = i - kCountDigits + 1;
+      int end = start + kCountDigits;
+
+      if (start < k) {
+        start = k;
+        end = i + 1;
       }
+
+      std::string digit(s.begin() + start, s.begin() + end);
+      digits_.push_back(std::stoi(digit));
+    }
+  }
+
+  BigInteger(const char* s, size_t n) : sign_(1) {
+    int k = 0;
+
+    if (s[0] == '-') {
+      sign_ = -1;
+      k = 1;
     }
 
-    BigInteger(const std::vector<int>& n, int sign) : digits_(n), sign_(sign) {
+    for (int i = static_cast<int>(n) - 1; i >= k; i -= kCountDigits) {
+      int start = i - kCountDigits + 1;
+      int end = i + 1;
+
+      if (start < k) {
+        start = k;
+      }
+
+      std::string digit(s + start, s + end);
+      digits_.push_back(std::stoi(digit));
+    }
+  }
+
+  size_t size() const { return digits_.size(); }
+
+  void change_sign() { sign_ = -sign_; }
+
+  void reserve(size_t n) { digits_.reserve(n); }
+
+  void swap(BigInteger& n) noexcept {
+    std::swap(digits_, n.digits_);
+    std::swap(sign_, n.sign_);
+  }
+
+  static void swap(BigInteger& a, BigInteger& b) {
+    std::swap(a.digits_, b.digits_);
+    std::swap(a.sign_, b.sign_);
+  }
+
+  void reverse() { std::reverse(digits_.begin(), digits_.end()); }
+
+ private:
+  BigInteger& plus_of_positive(const std::vector<int>& n) {
+    int delta = 0;
+
+    if (size() < n.size()) {
+      digits_.resize(n.size(), 0);
     }
 
-    BigInteger(const string& s) : sign_(1) {
-      int k = 0;
-
-      if (s[0] == '-') {
-        sign_ = -1;
-        k = 1;
-      }
-      if (s == "-0") {
-        sign_ = 0;
-        return;
-      }
-      if (s[0] == '0') {
-        sign_ = 0;
-        return;
-      }
-      for (int i = static_cast<int>(s.size()) - 1; i >= k; i -= kCountDigits) {
-        int start = i - kCountDigits + 1;
-        int end = start + kCountDigits;
-
-        if (start < k) {
-          start = k;
-          end = i + 1;
-        }
-
-        string digit(s.begin() + start, s.begin() + end);
-        digits_.push_back(std::stoi(digit));
-      }
+    for (size_t i = 0; i < n.size(); ++i) {
+      digits_[i] += n[i] + delta;
+      delta = digits_[i] / kBase;
+      digits_[i] %= kBase;
     }
 
-    BigInteger(const char* s, size_t n) : sign_(1) {
-      int k = 0;
-
-      if (s[0] == '-') {
-        sign_ = -1;
-        k = 1;
-      }
-
-      for (int i = static_cast<int>(n) - 1; i >= k; i -= kCountDigits) {
-        int start = i - kCountDigits + 1;
-        int end = i + 1;
-
-        if (start < k) {
-          start = k;
-        }
-
-        string digit(s + start, s + end);
-        digits_.push_back(std::stoi(digit));
-      }
+    size_t i = n.size();
+    while (delta != 0 && i < size()) {
+      digits_[i] += delta;
+      delta = digits_[i] / kBase;
+      digits_[i] %= kBase;
+      ++i;
     }
 
-    size_t size() const { return digits_.size(); }
-
-    void change_sign() { sign_ = -sign_; }
-
-    void reserve(size_t n) { digits_.reserve(n); }
-
-    void swap(BigInteger& n) noexcept {
-      std::swap(digits_, n.digits_);
-      std::swap(sign_, n.sign_);
+    if (delta != 0) {
+      digits_.push_back(delta);
     }
 
-    static void swap(BigInteger& a, BigInteger& b) {
-      std::swap(a.digits_, b.digits_);
-      std::swap(a.sign_, b.sign_);
-    }
+    return *this;
+  }
 
-    void reverse() { std::reverse(digits_.begin(), digits_.end()); }
+  BigInteger& minus_of_positive(const std::vector<int>& n) {
+    int delta = 0;
 
-  private:
-    BigInteger& plus_of_positive(const std::vector<int>& n) {
-      int delta = 0;
+    for (size_t i = 0; i < n.size() || (delta != 0 && i < size()); ++i) {
+      digits_[i] -= delta;
 
-      if (size() < n.size()) {
-        digits_.resize(n.size(), 0);
+      if (i < n.size()) {
+        digits_[i] -= n[i];
       }
 
-      for (size_t i = 0; i < n.size(); ++i) {
-        digits_[i] += n[i] + delta;
-        delta = digits_[i] / kBase;
-        digits_[i] %= kBase;
-      }
-
-      size_t i = n.size();
-      while (delta != 0 && i < size()) {
-        digits_[i] += delta;
-        delta = digits_[i] / kBase;
-        digits_[i] %= kBase;
-        ++i;
-      }
-
-      if (delta != 0) {
-        digits_.push_back(delta);
-      }
-
-      return *this;
-    }
-
-    BigInteger& minus_of_positive(const std::vector<int>& n) {
-      int delta = 0;
-
-      for (size_t i = 0; i < n.size() || (delta != 0 && i < size()); ++i) {
-        digits_[i] -= delta;
-
-        if (i < n.size()) {
-          digits_[i] -= n[i];
-        }
-
-        if (digits_[i] < 0) {
-          digits_[i] += kBase;
-          delta = 1;
-        } else {
-          delta = 0;
-        }
-      }
-
-      delete_last_nulls();
-
-      if (size() == 1 && digits_[0] == 0) {
-        sign_ = 0;
-      }
-
-      return *this;
-    }
-
-    BigInteger& composite_plus(const std::vector<int>& n, int n_sign) {
-      if (sign_ == 0) {
-        *this = BigInteger(n, n_sign);
-        return *this;
-      }
-
-      if (n_sign == 0) {
-        return *this;
-      }
-
-      if (sign_ == n_sign) {
-        plus_of_positive(n);
-        return *this;
-      }
-
-      if (!compare_less(digits_, n)) {
-        minus_of_positive(n);
+      if (digits_[i] < 0) {
+        digits_[i] += kBase;
+        delta = 1;
       } else {
-        BigInteger copy{n, n_sign};
-        swap(copy);
-        minus_of_positive(copy.digits_);
+        delta = 0;
       }
+    }
 
+    delete_last_nulls();
+
+    if (size() == 1 && digits_[0] == 0) {
+      sign_ = 0;
+    }
+
+    return *this;
+  }
+
+  BigInteger& composite_plus(const std::vector<int>& n, int n_sign) {
+    if (sign_ == 0) {
+      *this = BigInteger(n, n_sign);
       return *this;
     }
 
-    static bool compare_less(const vector<int>& a, const vector<int>& b) {
-      if (a.size() != b.size()) {
-        return (a.size() < b.size());
+    if (n_sign == 0) {
+      return *this;
+    }
+
+    if (sign_ == n_sign) {
+      plus_of_positive(n);
+      return *this;
+    }
+
+    if (!compare_less(digits_, n)) {
+      minus_of_positive(n);
+    } else {
+      BigInteger copy{n, n_sign};
+      swap(copy);
+      minus_of_positive(copy.digits_);
+    }
+
+    return *this;
+  }
+
+  static bool compare_less(const std::vector<int>& a, const std::vector<int>& b) {
+    if (a.size() != b.size()) {
+      return (a.size() < b.size());
+    }
+
+    for (int i = static_cast<int>(a.size()) - 1; i >= 0; --i) {
+      if (a[i] != b[i]) {
+        return (a[i] < b[i]);
+      }
+    }
+
+    return false;
+  }
+
+  static bool compare_great(const std::vector<int>& a, const std::vector<int>& b) {
+    return compare_less(b, a);
+  }
+
+  static BigInteger pow_of_base(int p) {
+    BigInteger b;
+    b.sign_ = 1;
+    b.digits_.resize(p, 0);
+    b.digits_.push_back(1);
+    return b;
+  }
+
+  BigInteger& stupid_multiplicate(const std::vector<int>& n) {
+    size_t old_size = digits_.size();
+    BigInteger copy;
+    copy.digits_.resize(old_size + n.size(), 0);
+    copy.sign_ = sign_;
+    swap(copy);
+
+    for (size_t i = 0; i < old_size; ++i) {
+      int delta = 0;
+
+      for (size_t j = 0; j < n.size(); ++j) {
+        long long new_digit = digits_[i + j] +
+                              static_cast<long long>(copy.digits_[i]) * n[j] +
+                              delta;
+        digits_[i + j] = static_cast<int>(new_digit % kBase);
+        delta = (new_digit / kBase);
       }
 
-      for (int i = static_cast<int>(a.size()) - 1; i >= 0; --i) {
-        if (a[i] != b[i]) {
-          return (a[i] < b[i]);
+      size_t pos = i + n.size();
+
+      while (delta > 0) {
+        if (pos >= digits_.size()) {
+          digits_.push_back(delta);
+          break;
         }
+
+        int new_digit = digits_[pos] + static_cast<int>(delta);
+        digits_[pos] = static_cast<int>(new_digit % kBase);
+        delta = static_cast<int>(new_digit / kBase);
+        ++pos;
+      }
+    }
+
+    delete_last_nulls();
+    return *this;
+  }
+
+  BigInteger& multiplicate_to_base(int degree) {
+    digits_.resize(digits_.size() + degree);
+    std::copy_backward(digits_.begin(),
+                       digits_.begin() + digits_.size() - degree,
+                       digits_.end());
+    std::fill(digits_.begin(), digits_.begin() + degree, 0);
+    return *this;
+  }
+
+  static BigInteger caracuba_multiplication(const BigInteger& A,
+                                            const BigInteger& B) {
+    if (A.sign_ == 0 || B.sign_ == 0) {
+      return BigInteger(0);
+    }
+
+    int max_size = std::max(A.size(), B.size());
+
+    if (max_size <= 100) {
+      BigInteger copy_a = A;
+      copy_a.stupid_multiplicate(B.digits_);
+      return copy_a;
+    }
+
+    int size_of_half = (max_size + 1) / 2;
+    BigInteger a = A;
+    BigInteger b = B;
+    a.sign_ = 1;
+    b.sign_ = 1;
+    a.digits_.resize(size_of_half * 2, 0);
+    b.digits_.resize(size_of_half * 2, 0);
+
+    BigInteger a1(a, 0, size_of_half);
+    BigInteger a2(a, size_of_half, a.size());
+    BigInteger b1(b, 0, size_of_half);
+    BigInteger b2(b, size_of_half, b.size());
+    BigInteger c1 = a1 + a2;
+    BigInteger c2 = b1 + b2;
+    BigInteger c = c1 * c2;
+    a1 *= b1;
+    a2 *= b2;
+    c -= a1;
+    c -= a2;
+    c.multiplicate_to_base(size_of_half);
+    a2.multiplicate_to_base(size_of_half * 2);
+    BigInteger ans = a1 + a2 + c;
+    return ans;
+  }
+
+  BigInteger multiplicate(const BigInteger& n) {
+    return caracuba_multiplication(*this, n);
+  }
+
+  BigInteger multiplicate(const std::vector<int>& n) {
+    sign_ = 1;
+    return caracuba_multiplication(*this, BigInteger(n));
+  }
+
+  // эта функция находит k = a/b,
+  // причём известно, что k от 0 до BASE(это достигается в том случае, если
+  // a.size()-b.size() = 0 или 1)
+  static int find_digit_of_division(const BigInteger& a, const std::vector<int>& b) {
+    int l = 0;
+    int r = kBase;
+    BigInteger d(b);
+
+    while (r - l > 1) {
+      int m = (l + r) / 2;
+
+      if (!compare_great((d * m).digits_, a.digits_)) {
+        l = m;
+      } else {
+        r = m;
+      }
+    }
+
+    return l;
+  }
+
+  BigInteger& divide(const std::vector<int>& n) {
+    if (n.size() > size()) {
+      change_to_zero();
+      return *this;
+    }
+
+    std::vector<int> result;
+    bool flag = false;
+    BigInteger suffix(*this, size() - n.size(), size());
+
+    for (int i = static_cast<int>(size()) - n.size() - 1; i >= -1; --i) {
+      int digit = find_digit_of_division(suffix, n);
+
+      if (digit != 0) {
+        flag = true;
       }
 
+      if (flag) {
+        result.push_back(digit);
+      }
+
+      suffix -= BigInteger(digit).multiplicate(n);
+
+      if (i == -1) {
+        continue;
+      }
+
+      suffix *= kBase;
+      suffix += digits_[i];
+    }
+
+    std::reverse(result.begin(), result.end());
+    digits_ = std::move(result);
+    delete_last_nulls();
+
+    if (digits_.empty()) {
+      sign_ = 0;
+    }
+
+    if (digits_.size() == 1 && digits_[0] == 0) {
+      sign_ = 0;
+    }
+
+    return *this;
+  }
+
+ public:
+  BigInteger& operator+=(const BigInteger& n) {
+    return composite_plus(n.digits_, n.sign_);
+  }
+
+  BigInteger& operator-=(const BigInteger& n) {
+    return composite_plus(n.digits_, -n.sign_);
+  }
+
+  BigInteger operator-() {
+    BigInteger copy = *this;
+    copy.change_sign();
+    return copy;
+  }
+
+  BigInteger& operator++() {
+    operator+=(1);
+    return *this;
+  }
+
+  BigInteger& operator--() {
+    operator-=(1);
+    return *this;
+  }
+
+  BigInteger operator++(int) {
+    BigInteger copy = *this;
+    operator+=(1);
+    return copy;
+  }
+
+  BigInteger operator--(int) {
+    BigInteger copy = *this;
+    operator-=(1);
+    return copy;
+  }
+
+  BigInteger& operator*=(const BigInteger& n) {
+    if (n.sign_ == 0) {
+      change_to_zero();
+      return *this;
+    }
+
+    if (sign_ == 0) {
+      return *this;
+    }
+
+    int answer_sign = n.sign_ * sign_;
+    *this = caracuba_multiplication(*this, n);
+    this->sign_ = answer_sign;
+    return *this;
+  }
+
+  BigInteger& operator/=(const BigInteger& n) {
+    if (sign_ == 0) {
+      return *this;
+    }
+
+    if (n.sign_ == 0) {
+      throw std::runtime_error("division by zero");
+    }
+
+    sign_ *= n.sign_;
+    return divide(n.digits_);
+  }
+
+  BigInteger& operator%=(const BigInteger& n) {
+    return *this -= (*this / n) * n;
+  }
+
+  std::string toString() const {
+    std::string s;
+
+    if (sign_ == -1) {
+      s.push_back('-');
+    }
+
+    if (sign_ == 0) {
+      return "0";
+    }
+
+    s += std::to_string(digits_.back());
+
+    for (int i = static_cast<int>(digits_.size()) - 2; i >= 0; --i) {
+      std::string digit = std::to_string(digits_[i]);
+      s += std::string(kCountDigits - digit.size(), '0') + digit;
+    }
+
+    return s;
+  }
+
+  static std::pair<std::vector<int>, std::vector<int> > divide_with_precision(
+      const BigInteger& a, const BigInteger& b, int precision) {
+    if (b.size() > a.size() && precision == 0) {
+      return {{0}, {0}};
+    }
+
+    std::vector<int> integer;
+    std::vector<int> frac;
+    BigInteger suffix = 0;
+    bool first_null = true;
+
+    for (int i = static_cast<int>(a.size()) - 1; i >= -1; --i) {
+      int digit = find_digit_of_division(suffix, b.digits_);
+
+      if (digit != 0) {
+        first_null = false;
+      }
+
+      if (!first_null) {
+        integer.push_back(digit);
+      }
+
+      suffix -= BigInteger(digit).multiplicate(b.digits_);
+      suffix *= kBase;
+
+      if (i > -1) {
+        suffix += a.digits_[i];
+      }
+    }
+
+    if (integer.empty()) {
+      integer.push_back(0);
+    }
+
+    for (int i = -2; i >= -1 - precision; --i) {
+      int digit = find_digit_of_division(suffix, b.digits_);
+      suffix -= BigInteger(digit).multiplicate(b.digits_);
+      suffix *= kBase;
+      frac.push_back(digit);
+    }
+
+    return {integer, frac};
+  }
+
+  static BigInteger gcd(BigInteger a, BigInteger b) {
+    while (b.sign_ != 0) {
+      a %= b;
+      swap(a, b);
+    }
+
+    a.sign_ = 1;
+    return a;
+  }
+
+  explicit operator bool() const {
+    if (digits_.empty()) {
       return false;
     }
+    if (digits_.size() == 1 && digits_[0] == 0) {
+      return false;
+    }
+    return true;
+  }
 
-    static bool compare_great(const std::vector<int>& a, const vector<int>& b) {
-      return compare_less(b, a);
+  friend std::strong_ordering operator<=>(const BigInteger& a,
+                                          const BigInteger& b) {
+    if (a.sign_ == 0 && b.sign_ == 0) {
+      return std::strong_ordering::equal;
+    }
+    if (a.sign_ != b.sign_) {
+      return a.sign_ <=> b.sign_;
     }
 
-    static BigInteger pow_of_base(int p) {
-      BigInteger b;
-      b.sign_ = 1;
-      b.digits_.resize(p, 0);
-      b.digits_.push_back(1);
-      return b;
+    if (a.size() != b.size()) {
+      return (a.sign_ == 1) ? (a.size() <=> b.size()) : (b.size() <=> a.size());
     }
 
-    BigInteger& stupid_multiplicate(const vector<int>& n) {
-      size_t old_size = digits_.size();
-      BigInteger copy;
-      copy.digits_.resize(old_size + n.size(), 0);
-      copy.sign_ = sign_;
-      swap(copy);
-
-      for (size_t i = 0; i < old_size; ++i) {
-        int delta = 0;
-
-        for (size_t j = 0; j < n.size(); ++j) {
-          long long new_digit = digits_[i + j] +
-              static_cast<long long>(copy.digits_[i]) * n[j] +
-              delta;
-          digits_[i + j] = static_cast<int>(new_digit % kBase);
-          delta = (new_digit / kBase);
-        }
-
-        size_t pos = i + n.size();
-
-        while (delta > 0) {
-          if (pos >= digits_.size()) {
-            digits_.push_back(delta);
-            break;
-          }
-
-          int new_digit = digits_[pos] + static_cast<int>(delta);
-          digits_[pos] = static_cast<int>(new_digit % kBase);
-          delta = static_cast<int>(new_digit / kBase);
-          ++pos;
-        }
+    for (int i = static_cast<int>(a.size()) - 1; i >= 0; --i) {
+      if (a.digits_[i] != b.digits_[i]) {
+        return (a.sign_ == 1) ? (a.digits_[i] <=> b.digits_[i])
+                              : (b.digits_[i] <=> a.digits_[i]);
       }
-
-      delete_last_nulls();
-      return *this;
     }
+    return std::strong_ordering::equal;
+  }
 
-    BigInteger& multiplicate_to_base(int degree) {
-      digits_.resize(digits_.size() + degree);
-      std::copy_backward(digits_.begin(),
-                         digits_.begin() + digits_.size() - degree,
-                         digits_.end());
-      std::fill(digits_.begin(), digits_.begin() + degree, 0);
-      return *this;
-    }
-
-    static BigInteger caracuba_multiplication(const BigInteger& A,
-                                              const BigInteger& B) {
-      if (A.sign_ == 0 || B.sign_ == 0) {
-        return BigInteger(0);
-      }
-
-      int max_size = std::max(A.size(), B.size());
-
-      if (max_size <= 100) {
-        BigInteger copy_a = A;
-        copy_a.stupid_multiplicate(B.digits_);
-        return copy_a;
-      }
-
-      int size_of_half = (max_size + 1) / 2;
-      BigInteger a = A;
-      BigInteger b = B;
-      a.sign_ = 1;
-      b.sign_ = 1;
-      a.digits_.resize(size_of_half * 2, 0);
-      b.digits_.resize(size_of_half * 2, 0);
-
-      BigInteger a1(a, 0, size_of_half);
-      BigInteger a2(a, size_of_half, a.size());
-      BigInteger b1(b, 0, size_of_half);
-      BigInteger b2(b, size_of_half, b.size());
-      BigInteger c1 = a1 + a2;
-      BigInteger c2 = b1 + b2;
-      BigInteger c = c1 * c2;
-      a1 *= b1;
-      a2 *= b2;
-      c -= a1;
-      c -= a2;
-      c.multiplicate_to_base(size_of_half);
-      a2.multiplicate_to_base(size_of_half * 2);
-      BigInteger ans = a1 + a2 + c;
-      return ans;
-    }
-
-    BigInteger multiplicate(const BigInteger& n) {
-      return caracuba_multiplication(*this, n);
-    }
-
-    BigInteger multiplicate(const vector<int>& n) {
-      sign_ = 1;
-      return caracuba_multiplication(*this, BigInteger(n));
-    }
-
-    // эта функция находит k = a/b,
-    // причём известно, что k от 0 до BASE(это достигается в том случае, если
-    // a.size()-b.size() = 0 или 1)
-    static int
-    find_digit_of_division(const BigInteger& a, const vector<int>& b) {
-      int l = 0;
-      int r = kBase;
-      BigInteger d(b);
-
-      while (r - l > 1) {
-        int m = (l + r) / 2;
-
-        if (!compare_great((d * m).digits_, a.digits_)) {
-          l = m;
-        } else {
-          r = m;
-        }
-      }
-
-      return l;
-    }
-
-    BigInteger& divide(const vector<int>& n) {
-      if (n.size() > size()) {
-        change_to_zero();
-        return *this;
-      }
-
-      vector<int> result;
-      bool flag = false;
-      BigInteger suffix(*this, size() - n.size(), size());
-
-      for (int i = static_cast<int>(size()) - n.size() - 1; i >= -1; --i) {
-        int digit = find_digit_of_division(suffix, n);
-
-        if (digit != 0) {
-          flag = true;
-        }
-
-        if (flag) {
-          result.push_back(digit);
-        }
-
-        suffix -= BigInteger(digit).multiplicate(n);
-
-        if (i == -1) {
-          continue;
-        }
-
-        suffix *= kBase;
-        suffix += digits_[i];
-      }
-
-      std::reverse(result.begin(), result.end());
-      digits_ = std::move(result);
-      delete_last_nulls();
-
-      if (digits_.empty()) {
-        sign_ = 0;
-      }
-
-      if (digits_.size() == 1 && digits_[0] == 0) {
-        sign_ = 0;
-      }
-
-      return *this;
-    }
-
-  public:
-    BigInteger& operator+=(const BigInteger& n) {
-      return composite_plus(n.digits_, n.sign_);
-    }
-
-    BigInteger& operator-=(const BigInteger& n) {
-      return composite_plus(n.digits_, -n.sign_);
-    }
-
-    BigInteger operator-() {
-      BigInteger copy = *this;
-      copy.change_sign();
-      return copy;
-    }
-
-    BigInteger& operator++() {
-      operator+=(1);
-      return *this;
-    }
-
-    BigInteger& operator--() {
-      operator-=(1);
-      return *this;
-    }
-
-    BigInteger operator++(int) {
-      BigInteger copy = *this;
-      operator+=(1);
-      return copy;
-    }
-
-    BigInteger operator--(int) {
-      BigInteger copy = *this;
-      operator-=(1);
-      return copy;
-    }
-
-    BigInteger& operator*=(const BigInteger& n) {
-      if (n.sign_ == 0) {
-        change_to_zero();
-        return *this;
-      }
-
-      if (sign_ == 0) {
-        return *this;
-      }
-
-      int answer_sign = n.sign_ * sign_;
-      *this = caracuba_multiplication(*this, n);
-      this->sign_ = answer_sign;
-      return *this;
-    }
-
-    BigInteger& operator/=(const BigInteger& n) {
-      if (sign_ == 0) {
-        return *this;
-      }
-
-      if (n.sign_ == 0) {
-        throw std::runtime_error("division by zero");
-      }
-
-      sign_ *= n.sign_;
-      return divide(n.digits_);
-    }
-
-    BigInteger& operator%=(const BigInteger& n) {
-      return *this -= (*this / n) * n;
-    }
-    string toString() const {
-      string s;
-
-      if (sign_ == -1) {
-        s.push_back('-');
-      }
-
-      if (sign_ == 0) {
-        return "0";
-      }
-
-      s += std::to_string(digits_.back());
-
-      for (int i = static_cast<int>(digits_.size()) - 2; i >= 0; --i) {
-        string digit = std::to_string(digits_[i]);
-        s += string(kCountDigits - digit.size(), '0') + digit;
-      }
-
-      return s;
-    }
-
-    static std::pair<vector<int>, vector<int> > divide_with_precision(
-      const BigInteger& a,
-      const BigInteger& b,
-      int precision) {
-      if (b.size() > a.size() && precision == 0) {
-        return {{0}, {0}};
-      }
-
-      vector<int> integer;
-      vector<int> frac;
-      BigInteger suffix = 0;
-      bool first_null = true;
-
-      for (int i = static_cast<int>(a.size()) - 1; i >= -1; --i) {
-        int digit = find_digit_of_division(suffix, b.digits_);
-
-        if (digit != 0) {
-          first_null = false;
-        }
-
-        if (!first_null) {
-          integer.push_back(digit);
-        }
-
-        suffix -= BigInteger(digit).multiplicate(b.digits_);
-        suffix *= kBase;
-
-        if (i > -1) {
-          suffix += a.digits_[i];
-        }
-      }
-
-      if (integer.empty()) {
-        integer.push_back(0);
-      }
-
-      for (int i = -2; i >= -1 - precision; --i) {
-        int digit = find_digit_of_division(suffix, b.digits_);
-        suffix -= BigInteger(digit).multiplicate(b.digits_);
-        suffix *= kBase;
-        frac.push_back(digit);
-      }
-
-      return {integer, frac};
-    }
-
-    static BigInteger gcd(BigInteger a, BigInteger b) {
-      while (b.sign_ != 0) {
-        a %= b;
-        swap(a, b);
-      }
-
-      a.sign_ = 1;
-      return a;
-    }
-
-    explicit operator bool() const {
-      if (digits_.empty()) {
-        return false;
-      }
-      if (digits_.size() == 1 && digits_[0] == 0) {
-        return false;
-      }
+  friend bool operator==(const BigInteger& a, const BigInteger& b) {
+    if (a.sign_ == 0 && b.sign_ == 0) {
       return true;
     }
 
-    friend std::strong_ordering operator<=>(const BigInteger& a,
-                                            const BigInteger& b) {
-      if (a.sign_ == 0 && b.sign_ == 0) {
-        return std::strong_ordering::equal;
-      }
-      if (a.sign_ != b.sign_) {
-        return a.sign_ <=> b.sign_;
-      }
-
-      if (a.size() != b.size()) {
-        return (a.sign_ == 1)
-                 ? (a.size() <=> b.size())
-                 : (b.size() <=> a.size());
-      }
-
-      for (int i = static_cast<int>(a.size()) - 1; i >= 0; --i) {
-        if (a.digits_[i] != b.digits_[i]) {
-          return (a.sign_ == 1)
-                   ? (a.digits_[i] <=> b.digits_[i])
-                   : (b.digits_[i] <=> a.digits_[i]);
-        }
-      }
-      return std::strong_ordering::equal;
+    if (a.size() != b.size() || a.sign_ != b.sign_) {
+      return false;
     }
+    return a.digits_ == b.digits_;
+  }
 
-    friend bool operator==(const BigInteger& a, const BigInteger& b) {
-      if (a.sign_ == 0 && b.sign_ == 0) {
-        return true;
-      }
-
-      if (a.size() != b.size() || a.sign_ != b.sign_) {
-        return false;
-      }
-      return a.digits_ == b.digits_;
-    }
-    friend BigInteger operator"" _bi(unsigned long long n);
+  friend BigInteger operator"" _bi(unsigned long long n);
 };
 
 bool operator!=(const BigInteger& a, const BigInteger& b) { return !(a == b); }
@@ -642,6 +642,7 @@ BigInteger operator%(const BigInteger& a, const BigInteger& b) {
   copy %= b;
   return copy;
 }
+
 BigInteger operator"" _bi(unsigned long long n) {
   BigInteger num;
   if (n > 0) {
@@ -661,7 +662,7 @@ BigInteger operator"" _bi(unsigned long long n) {
   return num;
 }
 
-BigInteger operator"" _bi(const char* s, size_t n) { return {string(s, n)}; }
+BigInteger operator"" _bi(const char* s, size_t n) { return {std::string(s, n)}; }
 
 std::ostream& operator<<(std::ostream& stream, const BigInteger& n) {
   stream << n.toString();
@@ -669,12 +670,14 @@ std::ostream& operator<<(std::ostream& stream, const BigInteger& n) {
 }
 
 std::istream& operator>>(std::istream& stream, BigInteger& n) {
-  string s;
+  std::string s;
   stream >> s;
   n = BigInteger(s);
   return stream;
 }
+
 class Rational;
+
 std::ostream& operator<<(std::ostream& stream, const Rational& n);
 
 class Rational {
@@ -692,125 +695,122 @@ class Rational {
     }
   }
 
-  public:
-    Rational() : p(0), q(1) {
+ public:
+  Rational() : p(0), q(1) {}
+
+  Rational(const Rational&) = default;
+
+  Rational(const BigInteger& n) : p(n), q(1) {}
+
+  Rational(int n) : Rational(static_cast<BigInteger>(n)) {}
+
+  Rational& operator=(const Rational&) = default;
+
+  Rational& operator+=(const Rational& frac) {
+    p = p * frac.q + q * frac.p;
+    q *= frac.q;
+    simplify();
+    return *this;
+  }
+
+  Rational& operator-=(const Rational& frac) {
+    p = p * frac.q - q * frac.p;
+    q *= frac.q;
+    simplify();
+    return *this;
+  }
+
+  Rational& operator*=(const Rational& frac) {
+    p *= frac.p;
+    q *= frac.q;
+    simplify();
+    return *this;
+  }
+
+  Rational& operator/=(const Rational& frac) {
+    p *= frac.q;
+    q *= frac.p;
+    p.sign_ *= frac.p.sign_;
+    q.sign_ = 1;
+    simplify();
+    return *this;
+  }
+
+  Rational operator-()const {
+    Rational copy = *this;
+    if (copy.p.sign_ != 0) {
+      copy.p.sign_ = -copy.p.sign_;
+    }
+    return copy;
+  }
+  std::string toString() const {
+    if (q == BigInteger(1)) {
+      return p.toString();
     }
 
-    Rational(const Rational&) = default;
+    BigInteger g = BigInteger::gcd(p, q);
+    BigInteger p1 = p / g;
+    BigInteger q1 = q / g;
+    std::string s = p1.toString();
+    s.push_back('/');
+    s += q1.toString();
+    return s;
+  }
 
-    Rational(const BigInteger& n) : p(n), q(1) {
+  std::string asDecimal(char ch, int precision) const {
+    int precision1 = precision;
+    precision /= BigInteger::kCountDigits;
+    ++precision;
+
+    std::pair<std::vector<int>, std::vector<int> > integer_and_frac =
+        BigInteger::divide_with_precision(p, q, precision);
+    std::string s;
+
+    if (p.sign_ == -1) {
+      s.push_back('-');
     }
 
-    Rational(int n) : Rational(static_cast<BigInteger>(n)) {
+    for (int el : integer_and_frac.first) {
+      std::string digit = std::to_string(el);
+      s += digit;
     }
 
-    Rational& operator=(const Rational&) = default;
+    int count = BigInteger::kCountDigits * integer_and_frac.second.size();
+    s.push_back(ch);
 
-    Rational& operator+=(const Rational& frac) {
-      p = p * frac.q + q * frac.p;
-      q *= frac.q;
-      simplify();
-      return *this;
+    for (int el : integer_and_frac.second) {
+      std::string digit = std::to_string(el);
+      s += (std::string(BigInteger::kCountDigits - digit.size(), '0') + digit);
     }
 
-    Rational& operator-=(const Rational& frac) {
-      p = p * frac.q - q * frac.p;
-      q *= frac.q;
-      simplify();
-      return *this;
+    while (count > precision1) {
+      --count;
+      s.pop_back();
     }
 
-    Rational& operator*=(const Rational& frac) {
-      p *= frac.p;
-      q *= frac.q;
-      simplify();
-      return *this;
-    }
-
-    Rational& operator/=(const Rational& frac) {
-      p *= frac.q;
-      q *= frac.p;
-      p.sign_ *= frac.p.sign_;
-      q.sign_ = 1;
-      simplify();
-      return *this;
-    }
-
-    Rational operator-() {
-      Rational copy = *this;
-      if (copy.p.sign_ != 0) {
-        copy.p.sign_ = -copy.p.sign_;
-      }
-      return copy;
-    }
-    string toString() const {
-      if (q == BigInteger(1)) {
-        return p.toString();
-      }
-
-      BigInteger g = BigInteger::gcd(p, q);
-      BigInteger p1 = p / g;
-      BigInteger q1 = q / g;
-      string s = p1.toString();
-      s.push_back('/');
-      s += q1.toString();
+    if (precision == 0) {
       return s;
     }
 
-    string asDecimal(char ch, int precision) const {
-      int precision1 = precision;
-      precision /= BigInteger::kCountDigits;
-      ++precision;
+    return s;
+  }
 
-      std::pair<vector<int>, vector<int> > integer_and_frac =
-          BigInteger::divide_with_precision(p, q, precision);
-      string s;
+  std::string asDecimal(int precision = 0) const {
+    return asDecimal('.', precision);
+  }
 
-      if (p.sign_ == -1) {
-        s.push_back('-');
-      }
+  explicit operator double() const { return std::stod(asDecimal('.', 100)); }
 
-      for (int el : integer_and_frac.first) {
-        string digit = std::to_string(el);
-        s += digit;
-      }
-
-      int count = BigInteger::kCountDigits * integer_and_frac.second.size();
-      s.push_back(ch);
-
-      for (int el : integer_and_frac.second) {
-        string digit = std::to_string(el);
-        s += (string(BigInteger::kCountDigits - digit.size(), '0') + digit);
-      }
-
-      while (count > precision1) {
-        --count;
-        s.pop_back();
-      }
-
-      if (precision == 0) {
-        return s;
-      }
-
-      return s;
+  friend std::strong_ordering operator<=>(const Rational& a,
+                                          const Rational& b) {
+    return operator<=>(a.p * b.q, a.q * b.p);
+  }
+  friend bool operator==(const Rational& a, const Rational& b) {
+    if ((a.p != b.p) || (a.q != b.q)) {
+      return false;
     }
-
-    string asDecimal(int precision = 0) const {
-      return asDecimal('.', precision);
-    }
-
-    explicit operator double() const { return std::stod(asDecimal('.', 100)); }
-
-    friend std::strong_ordering operator<=>(const Rational& a,
-                                            const Rational& b) {
-      return operator<=>(a.p * b.q, a.q * b.p);
-    }
-    friend bool operator==(const Rational& a, const Rational& b) {
-      if ((a.p != b.p) || (a.q != b.q)) {
-        return false;
-      }
-      return true;
-    }
+    return true;
+  }
 };
 
 bool operator!=(const Rational& a, const Rational& b) { return !(a == b); }
@@ -844,37 +844,46 @@ std::ostream& operator<<(std::ostream& stream, const Rational& n) {
   stream << s;
   return stream;
 }
+
 std::istream& operator>>(std::istream& stream, Rational& n) {
   BigInteger a;
   stream >> a;
   n = BigInteger(a);
   return stream;
 }
-template<size_t N, size_t D>
+
+template <size_t N, size_t D>
 struct IsPrime_Helper {
-  static constexpr bool value = N % D != 0 && std::conditional_t<
-    (D * D > N), IsPrime_Helper<0, 0>, IsPrime_Helper<N, D + 1> >::value;
+  static constexpr bool value =
+      N % D != 0 && std::conditional_t<(D * D > N), IsPrime_Helper<0, 0>,
+                                       IsPrime_Helper<N, D + 1> >::value;
 };
-template<>
+
+template <>
 struct IsPrime_Helper<0, 0> {
   static constexpr bool value = true;
 };
-template<size_t N>
+
+template <size_t N>
 struct IsPrime {
   static constexpr bool value = IsPrime_Helper<N, 2>::value;
 };
-template<>
+
+template <>
 struct IsPrime<1> {
   static constexpr bool value = false;
 };
-template<size_t N>
+
+template <size_t N>
 constexpr bool IsPrime_v = IsPrime<N>::value;
 
-template<size_t N>
+template <size_t N>
 struct Residue {
   int number;
+
   Residue() = default;
-  Residue(int number) {
+
+  Residue(int number){
     if (number >= 0) {
       this->number = number % N;
     } else {
@@ -883,10 +892,10 @@ struct Residue {
         this->number += N;
       }
     }
+
   }
-  operator int() const {
-    return number;
-  }
+  operator int() const { return number; }
+
   static Residue pow(Residue a, size_t n) {
     Residue result = 1;
     while (n > 0) {
@@ -902,73 +911,64 @@ struct Residue {
     number = (number + a) % N;
     return *this;
   }
-  Residue operator-()const {
+
+  Residue operator-() const {
     Residue ans = *this;
     if (ans.number != 0) {
       ans.number = -ans.number + N;
     }
     return ans;
   }
-  Residue& operator-=(Residue a) {
-    return operator+=(-a);
-  }
+
+  Residue& operator-=(Residue a) { return operator+=(-a); }
+
   Residue& operator*=(Residue a) {
     number = (static_cast<long long>(number) * a) % N;
     return *this;
   }
+
   Residue& operator/=(Residue a) {
     static_assert(IsPrime_v<N>);
-    //a^(p-1) = 1, a^(p-2) = 1/a => a^(p-2) * b
     *this *= pow(a, N - 2);
     return *this;
   }
 };
-template<size_t N>
+template <size_t N>
 Residue<N> operator+(Residue<N> a, Residue<N> b) {
   return a += b;
 }
 
-template<size_t N>
+template <size_t N>
 Residue<N> operator-(Residue<N> a, Residue<N> b) {
   return a -= b;
 }
 
-template<size_t N>
+template <size_t N>
 Residue<N> operator*(Residue<N> a, Residue<N> b) {
   return a *= b;
 }
 
-template<size_t N>
+template <size_t N>
 Residue<N> operator/(Residue<N> a, Residue<N> b) {
   return a /= b;
 }
 
-template<size_t N>
+template <size_t N>
 bool operator==(Residue<N> a, Residue<N> b) {
   return a.number == b.number;
 }
 
-Rational abs(const Rational& r) {
-  return r > 0 ? r : (-1 * r);
-}
-template<size_t M, size_t N, typename Field = Rational>
-struct Matrix {
+Rational abs(const Rational& r) { return r > 0 ? r : (-r); }
+
+template <size_t M, size_t N, typename Field = Rational>
+class Matrix {
+  template <size_t M1, size_t N1, typename Field1>
+  friend class Matrix;
   using Row = std::array<Field, N>;
   using Column = std::array<Field, M>;
   std::array<Row, M> table;
-  Matrix() {
-    SetOperation([](Field& x) { x = 0; });
-  }
-  Matrix(const Matrix&) = default;
-  Matrix& operator=(const Matrix&) = default;
-  Matrix(const std::initializer_list<std::array<Field, N> >& list) {
-    auto it = list.begin();
-    for (size_t i = 0; i < M; ++i) {
-      table[i] = *it;
-      ++it;
-    }
-  }
-  template<typename Func, typename... Args>
+
+  template <typename Func, typename... Args>
   void SetOperationWithIndex(Func function, Args... args) {
     for (size_t i = 0; i < M; ++i) {
       for (size_t j = 0; j < N; ++j) {
@@ -976,12 +976,30 @@ struct Matrix {
       }
     }
   }
-  template<typename Func, typename... Args>
+
+  template <typename Func, typename... Args>
   void SetOperation(Func function, Args... args) {
     for (size_t i = 0; i < M; ++i) {
       for (size_t j = 0; j < N; ++j) {
         function(table[i][j], args...);
       }
+    }
+  }
+
+  public:
+  Matrix() {
+    SetOperation([](Field& x) { x = 0; });
+  }
+
+  Matrix(const Matrix&) = default;
+
+  Matrix& operator=(const Matrix&) = default;
+
+  Matrix(const std::initializer_list<std::array<Field, N> >& list) {
+    auto it = list.begin();
+    for (size_t i = 0; i < M; ++i) {
+      table[i] = *it;
+      ++it;
     }
   }
 
@@ -993,16 +1011,15 @@ struct Matrix {
     }
     return m;
   }
+
   Matrix<N, M, Field> transposed() const {
     Matrix<N, M, Field> m;
-    m.SetOperationWithIndex([*this](Field& x, size_t i, size_t j) {
-      x = (*this)[j, i];
-    });
+    m.SetOperationWithIndex(
+        [*this](Field& x, size_t i, size_t j) { x = (*this)[j, i]; });
     return m;
   }
-  Row getRow(size_t i) const {
-    return table[i];
-  }
+
+  Row getRow(size_t i) const { return table[i]; }
 
   Column getColumn(size_t i) const {
     Column c;
@@ -1033,14 +1050,15 @@ struct Matrix {
   }
 
   void multiplyRowByScalar(size_t pos, Field scalar) {
-    if(scalar == 1) {
+    if (scalar == 1) {
       return;
     }
-    std::for_each(table[pos].begin(),table[pos].end(), [scalar](Field& x) { x *= scalar; });
+    std::for_each(table[pos].begin(), table[pos].end(),
+                  [scalar](Field& x) { x *= scalar; });
   }
 
   void multiplyColumnByScalar(size_t pos, Field scalar) {
-    if(scalar == 1) {
+    if (scalar == 1) {
       return;
     }
     for (size_t i = 0; i < M; ++i) {
@@ -1050,7 +1068,7 @@ struct Matrix {
 
   // Вычитаем из строки first строку second * scalar
   void subtractRows(size_t first, size_t second, Field scalar = 1) {
-    if(scalar == 0) {
+    if (scalar == 0) {
       return;
     }
     for (size_t i = 0; i < N; ++i) {
@@ -1060,7 +1078,7 @@ struct Matrix {
 
   // Вычитаем из столбца first столбец second * scalar
   void subtractColumns(size_t first, size_t second, Field scalar) {
-    if(scalar == 0) {
+    if (scalar == 0) {
       return;
     }
     for (size_t i = 0; i < M; ++i) {
@@ -1069,7 +1087,7 @@ struct Matrix {
   }
 
   // равна ли нулю колонна pos от start до end(не вкл)
-  bool isColumnNull(size_t pos,size_t start = 0, size_t end = M) const {
+  bool isColumnNull(size_t pos, size_t start = 0, size_t end = M) const {
     for (size_t i = start; i < end; ++i) {
       if (table[i][pos] != 0) {
         return false;
@@ -1077,7 +1095,8 @@ struct Matrix {
     }
     return true;
   }
-  bool isRowNull(size_t pos,size_t start = 0, size_t end = N) const {
+
+  bool isRowNull(size_t pos, size_t start = 0, size_t end = N) const {
     for (size_t i = start; i < end; ++i) {
       if (table[pos][i] != 0) {
         return false;
@@ -1087,94 +1106,89 @@ struct Matrix {
   }
 
   // этот метод преобразует матрицу в ступенчатую
-  // причем в случае N == 1, он не делает ничего доп
-  // если N == 2, то он запоминает число, на которое должен был умножится детерминант
-  // если N == 3, то он все элементарные преобразования выполняет и с единичной матрицей
-  template<int F, typename T>
+  // причем в случае N == 1, он не делает ничего дополнительно
+  // если N == 2, то он запоминает число, на которое должен был умножится
+  // детерминант
+  // если N == 3, то все элементарные преобразования *this выполняются и
+  // с единичной матрицей
+  private:
+  template <int F, typename T>
   void GaussMethod(T& value) {
     Matrix E;
     Field det = 1;
-    if constexpr(F == 3) {
+    if constexpr (F == 3) {
       E = unityMatrix();
     }
     size_t k = 0;
-    for (size_t i = 0; i < M && k<N; ++i) {
-      if(isRowNull(i,k,N)) {
+    for (size_t i = 0; i < M && k < N; ++i) {
+      if (isRowNull(i, k, N)) {
         continue;
       }
       // i - (k)-ая ненулевая строка
       if (table[i][k] == 0) {
-        size_t j = i+1;
-        while (table[j][k] == 0 && j<M) {
+        size_t j = i + 1;
+        while (table[j][k] == 0 && j < M) {
           ++j;
         }
-        if(j == M) {
+        if (j == M) {
           ++k;
           continue;
         }
-        det*=Field(-1);
-        if constexpr(F == 3) {
-          E.swapRows(i,j);
+        det *= Field(-1);
+        if constexpr (F == 3) {
+          E.swapRows(i, j);
         }
-        swapRows(i,j);
-        // cout<<"swapRows"<<'\n';
-        // Print();
+        swapRows(i, j);
       }
-      // нормализация строки i
-      det*=(Field(1)/(table[i][k]));
-      if constexpr(F == 3) {
-        E.multiplyRowByScalar(i,Field(1)/(table[i][k]));
+
+      // нормализация строки i (k-ый элемент строки i станет равным 1
+      det *= (Field(1) / (table[i][k]));
+      if constexpr (F == 3) {
+        E.multiplyRowByScalar(i, Field(1) / (table[i][k]));
       }
-      multiplyRowByScalar(i,Field(1)/(table[i][k]));
-      // cout<<"multiplyRowByScalar"<<'\n';
-      // Print();
+      multiplyRowByScalar(i, Field(1) / (table[i][k]));
 
       // делаем весь k-ый столбец нулевым кроме её i-го элемента
       for (size_t t = 0; t < M; ++t) {
-        if(t == i) {
+        if (t == i) {
           continue;
         }
-        if constexpr(F == 3) {
-          E.subtractRows(t,i,table[t][k]);
+        if constexpr (F == 3) {
+          E.subtractRows(t, i, table[t][k]);
         }
-        subtractRows(t,i,table[t][k]);
-        // cout<<"subtractRows"<<'\n';
-        // Print();
+        subtractRows(t, i, table[t][k]);
       }
       ++k;
     }
-    if constexpr(F == 2) {
+    if constexpr (F == 2) {
       value = det;
     }
-    if constexpr(F == 3) {
+    if constexpr (F == 3) {
       value = E;
     }
   }
-
-   Field det() const {
+  public:
+  Field det() const {
     static_assert(M == N);
     Matrix copy = *this;
     Field matrixDet;
     copy.template GaussMethod<2>(matrixDet);
     for (size_t i = 0; i < M; ++i) {
-      if(copy[i,i]!=1) {
+      if (copy[i, i] != 1) {
         return 0;
       }
     }
-    return Field(1)/matrixDet;
+    return Field(1) / matrixDet;
   }
 
   size_t rank() const {
-    // std::cerr<<typeid(Field).name()<<"\n";
-    // Print_cerr();
     Matrix copy = *this;
     bool a;
     copy.template GaussMethod<1>(a);
-    // copy.Print();
     size_t matrixRank = 0;
     for (size_t i = 0; i < M; ++i) {
       for (size_t j = 0; j < N; ++j) {
-        if(copy.table[i][j] != 0) {
+        if (copy.table[i][j] != 0) {
           ++matrixRank;
           break;
         }
@@ -1183,12 +1197,11 @@ struct Matrix {
     return matrixRank;
   }
 
-  Matrix<M, M,Field> inverted() const {
-    static_assert(M==N);
+  Matrix<M, M, Field> inverted() const {
+    static_assert(M == N);
     Matrix copy = *this;
     Matrix ans;
     copy.template GaussMethod<3>(ans);
-    // copy.Print();
     return std::move(ans);
   }
 
@@ -1198,52 +1211,48 @@ struct Matrix {
     *this = copy.inverted();
   }
 
-  Field& operator[](size_t i, size_t j) {
-    return table[i][j];
-  }
-  const Field& operator[](size_t i, size_t j) const {
-    return table[i][j];
-  }
+  Field& operator[](size_t i, size_t j) { return table[i][j]; }
+
+  const Field& operator[](size_t i, size_t j) const { return table[i][j]; }
+
   Matrix& operator+=(const Matrix& a) {
     SetOperationWithIndex([a](Field& x, size_t i, size_t j) { x += a[i, j]; });
     return *this;
   }
+
   Matrix& operator-=(const Matrix& a) {
     SetOperationWithIndex([a](Field& x, size_t i, size_t j) { x -= a[i, j]; });
     return *this;
   }
-  Matrix& operator-() {
-    SetOperation([](Field& x) { x = -x; });
-    return *this;
+
+  Matrix operator-() {
+    Matrix copy = *this;
+    copy.SetOperation([](Field& x) { x = -x; });
+    return copy;
   }
+
   Matrix& operator*=(Field a) {
     SetOperation([a](Field& x) { x *= a; });
     return *this;
   }
+
   Matrix& operator*=(const Matrix& a) {
     static_assert(M == N);
     *this = *this * a;
     return *this;
   }
-  void Print() const {
+
+  friend std::ostream& operator<<(std::ostream& stream, const Matrix<M,N,Field>& m) {
     for (size_t i = 0; i < M; ++i) {
       for (size_t j = 0; j < N; ++j) {
-        std::cout << table[i][j] << " ";
+        stream << m.table[i][j] << " ";
       }
-      std::cout << '\n';
+      stream << '\n';
     }
-    std::cout<<'\n';
-  }
-  void Print_cerr() const {
-    for (size_t i = 0; i < M; ++i) {
-      for (size_t j = 0; j < N; ++j) {
-        std::cerr << table[i][j] << " ";
-      }
-      std::cerr << '\n';
-    }
+    return stream;
   }
 };
-template<size_t M, size_t N, typename Field = Rational>
+template <size_t M, size_t N, typename Field = Rational>
 bool operator==(const Matrix<M, N, Field>& a, const Matrix<M, N, Field>& b) {
   for (size_t i = 0; i < M; ++i) {
     for (size_t j = 0; j < N; ++j) {
@@ -1254,40 +1263,45 @@ bool operator==(const Matrix<M, N, Field>& a, const Matrix<M, N, Field>& b) {
   }
   return true;
 }
-template<size_t M, size_t N, typename Field = Rational>
+
+template <size_t M, size_t N, typename Field = Rational>
 bool operator!=(const Matrix<M, N, Field>& a, const Matrix<M, N, Field>& b) {
   return !(a == b);
 }
 
-template<size_t M, typename Field = Rational>
+template <size_t M, typename Field = Rational>
 using SquareMatrix = Matrix<M, M, Field>;
-template<size_t M, size_t N, typename T, typename Field = Rational>
+template <size_t M, size_t N, typename T, typename Field = Rational>
 Matrix<M, N, Field> operator*(const Matrix<M, N, Field>& m, T a) {
   Matrix<M, N, Field> copy = m;
   copy *= a;
   return copy;
 }
-template<size_t M, size_t N, typename T, typename Field = Rational>
+
+template <size_t M, size_t N, typename T, typename Field = Rational>
 Matrix<M, N, Field> operator*(T a, const Matrix<M, N, Field>& m) {
   Matrix<M, N, Field> copy = m;
   copy *= a;
   return copy;
 }
-template<size_t M, size_t N, typename Field = Rational>
+
+template <size_t M, size_t N, typename Field = Rational>
 Matrix<M, N, Field> operator+(const Matrix<M, N, Field> a,
                               const Matrix<M, N, Field> b) {
   Matrix<M, N, Field> copy = a;
   copy += b;
   return copy;
 }
-template<size_t M, size_t N, typename Field = Rational>
+
+template <size_t M, size_t N, typename Field = Rational>
 Matrix<M, N, Field> operator-(const Matrix<M, N, Field> a,
                               const Matrix<M, N, Field> b) {
   Matrix<M, N, Field> copy = a;
   copy -= b;
   return copy;
 }
-template<size_t M, size_t N, size_t K, typename Field = Rational>
+
+template <size_t M, size_t N, size_t K, typename Field = Rational>
 Matrix<M, K, Field> operator*(const Matrix<M, N, Field> a,
                               const Matrix<N, K, Field> b) {
   Matrix<M, K, Field> ans;
